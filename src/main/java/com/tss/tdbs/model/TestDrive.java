@@ -15,6 +15,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotBlank;
 
+import org.hibernate.annotations.NamedQuery;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.springframework.data.annotation.CreatedDate;
@@ -25,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
 @Entity
+@NamedQuery(name = "TestDrive.findExistTestDrive", query = "SELECT e FROM TestDrive e WHERE e.dealerId=?1 AND e.carModel=?2 AND e.dateTimeFrom=?3 AND e.statusId!='DC'")
+@NamedQuery(name = "TestDrive.findByBookingId", query = "SELECT e FROM TestDrive e WHERE e.bookingId=?1")
 @Table(name = "test_drive")
 @TypeDef(name = "json", typeClass = JsonStringType.class)
 @EntityListeners(AuditingEntityListener.class)
@@ -37,26 +40,34 @@ public class TestDrive implements Serializable {
 	@Column(name = "test_drive_id")
     private Long testDriveId;
 	
-	@Type( type = "json" )
-	@NotBlank
-	@Column(name = "booking_id", columnDefinition = "json" )
-    private List<Long> bookingId;
+	//@Type( type = "json" )
+	//@NotBlank
+	//@Column(name = "booking_id", columnDefinition = "json" )
+    //private List<Long> bookingId;
 	
-	@NotBlank
+	@Column(name = "booking_id")
+    private Long bookingId;
+	
 	@Column(name = "dealer_id")
     private Long dealerId;
 	
-	@Type( type = "json" )
+	@Column(name = "screening_id")
+    private Long screeningId;
+	
+	/*@Type( type = "json" )
 	@NotBlank
 	@Column(name = "car_model", columnDefinition = "json" )
     private List<String> carModel;
+	*/
 	
 	@NotBlank
+	@Column(name = "car_model")
+	private String carModel;
+	
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "date_time_from")
     private Date dateTimeFrom;
 	
-	@NotBlank
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "date_time_to")
     private Date dateTimeTo;
@@ -74,6 +85,9 @@ public class TestDrive implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     @LastModifiedDate
     private Date updatedAt;
+    
+    @Column(name = "prefer_group")
+    private boolean preferGroup;
 
 	public Long getTestDriveId() {
 		return testDriveId;
@@ -83,11 +97,11 @@ public class TestDrive implements Serializable {
 		this.testDriveId = testDriveId;
 	}
 
-	public List<Long> getBookingId() {
+	public Long getBookingId() {
 		return bookingId;
 	}
 
-	public void setBookingId(List<Long> bookingId) {
+	public void setBookingId(Long bookingId) {
 		this.bookingId = bookingId;
 	}
 
@@ -98,12 +112,22 @@ public class TestDrive implements Serializable {
 	public void setDealerId(Long dealerId) {
 		this.dealerId = dealerId;
 	}
+	
+	
 
-	public List<String> getCarModel() {
+	public Long getScreeningId() {
+		return screeningId;
+	}
+
+	public void setScreeningId(Long screeningId) {
+		this.screeningId = screeningId;
+	}
+
+	public String getCarModel() {
 		return carModel;
 	}
 
-	public void setCarModel(List<String> carModel) {
+	public void setCarModel(String carModel) {
 		this.carModel = carModel;
 	}
 
@@ -146,6 +170,15 @@ public class TestDrive implements Serializable {
 	public void setUpdatedAt(Date updatedAt) {
 		this.updatedAt = updatedAt;
 	}
+
+	public boolean isPreferGroup() {
+		return preferGroup;
+	}
+
+	public void setPreferGroup(boolean preferGroup) {
+		this.preferGroup = preferGroup;
+	}
     
+	
     
 }

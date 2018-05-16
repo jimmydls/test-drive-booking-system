@@ -22,5 +22,19 @@ public class Constants {
 	
 	/** The Constant EXIT. */
 	public static final String EXIT = "Exit";
+	
+	public static final String PENDING_DEALER = "PD";
+	
+	public static final String PENDING_CLIENT = "PC";
+	
+	public static final String CREATED = "C";
+	
+	public static final String DONE = "D";
+	
+	public static final String NOT_FOUND = "NF";
+	
+	public static final String ACCEPT = "AC";
+	
+	public static final String DECLINE = "DC";
 
 }

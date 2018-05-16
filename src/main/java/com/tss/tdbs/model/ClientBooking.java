@@ -2,6 +2,7 @@ package com.tss.tdbs.model;
 
 import javax.validation.constraints.NotBlank;
 
+import org.hibernate.annotations.NamedQuery;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.springframework.data.annotation.CreatedDate;
@@ -18,6 +19,7 @@ import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import com.tss.tdbs.dto.Timeslot;
 
 @Entity
+@NamedQuery(name = "ClientBooking.findByStatus", query = "SELECT e FROM ClientBooking e WHERE e.statusId = ?1 ORDER BY e.priority")
 @Table(name = "client_booking")
 @TypeDef(name = "json", typeClass = JsonStringType.class)
 @EntityListeners(AuditingEntityListener.class)
@@ -30,17 +32,24 @@ public class ClientBooking implements Serializable {
 	@Column(name = "booking_id")
     private Long bookingId;
 	
-	@Type( type = "json" )
-	@Column(name = "timeslot", columnDefinition = "json" )
-	private List<Timeslot> timeslot;
+	//@Type( type = "json" )
+	//@Column(name = "timeslot", columnDefinition = "json" )
+	//private List<Timeslot> timeslot;
+	
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "dateTimeFrom")
+    private Date dateTimeFrom;
+	
+	@Column(name = "priority")
+    private int priority;
+	
+	//@Type( type = "json" )
+	//@Column(name = "car_model", columnDefinition = "json" )
+    //private List<String> carModel;
 	
 	@NotBlank
-	@Column(name = "priority")
-    private String priority;
-	
-	@Type( type = "json" )
-	@Column(name = "car_model", columnDefinition = "json" )
-    private List<String> carModel;
+	@Column(name = "car_model")
+    private String carModel;
 	
 	@Column(name = "prefer_group")
     private boolean preferGroup;
@@ -69,29 +78,29 @@ public class ClientBooking implements Serializable {
 
 	public void setBookingId(Long bookingId) {
 		this.bookingId = bookingId;
+	}	
+
+	public Date getDateTimeFrom() {
+		return dateTimeFrom;
 	}
 
-	public List<Timeslot> getTimeslot() {
-		return timeslot;
+	public void setDateTimeFrom(Date dateTimeFrom) {
+		this.dateTimeFrom = dateTimeFrom;
 	}
 
-	public void setTimeslot(List<Timeslot> timeslot) {
-		this.timeslot = timeslot;
-	}
-
-	public String getPriority() {
+	public int getPriority() {
 		return priority;
 	}
 
-	public void setPriority(String priority) {
+	public void setPriority(int priority) {
 		this.priority = priority;
 	}
 
-	public List<String> getCarModel() {
+	public String getCarModel() {
 		return carModel;
 	}
 
-	public void setCarModel(List<String> carModel) {
+	public void setCarModel(String carModel) {
 		this.carModel = carModel;
 	}
 

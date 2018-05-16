@@ -86,4 +86,5 @@
   <classpathentry kind="var" path="M2_REPO/org/springframework/boot/spring-boot-starter-mail/2.0.2.RELEASE/spring-boot-starter-mail-2.0.2.RELEASE.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/springframework/spring-context-support/5.0.6.RELEASE/spring-context-support-5.0.6.RELEASE.jar"/>
   <classpathentry kind="var" path="M2_REPO/com/sun/mail/javax.mail/1.6.1/javax.mail-1.6.1.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-lang3/3.7/commons-lang3-3.7.jar"/>
 </classpath>

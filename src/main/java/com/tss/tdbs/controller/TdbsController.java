@@ -6,14 +6,22 @@ import com.tss.tdbs.model.Client;
 import com.tss.tdbs.model.ClientBooking;
 import com.tss.tdbs.model.Dealer;
 import com.tss.tdbs.model.DealerAgent;
+import com.tss.tdbs.model.TestDrive;
+import com.tss.tdbs.model.TestDriveScreening;
 import com.tss.tdbs.repository.ClientBookingRepository;
 import com.tss.tdbs.repository.ClientRepository;
 import com.tss.tdbs.repository.DealerAgentRepository;
 import com.tss.tdbs.repository.DealerRepository;
+import com.tss.tdbs.repository.TestDriveRepository;
+import com.tss.tdbs.repository.TestDriveScreeningRepository;
+import com.tss.tdbs.util.Constants;
 import com.tss.tdbs.util.email.Email;
 import com.tss.tdbs.util.email.EmailService;
 import com.tss.tdbs.util.email.EmailTemplate;
 
+import org.apache.commons.lang3.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
@@ -24,14 +32,18 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/tdbs/api")
 public class TdbsController {
+	
+	final static Logger logger = LoggerFactory.getLogger(TdbsController.class);
 	
 	@Autowired
 	EmailService emailService;
@@ -47,6 +59,12 @@ public class TdbsController {
 	
 	@Autowired
 	DealerAgentRepository dealerAgentRepository;
+	
+	@Autowired
+	TestDriveScreeningRepository testDriveScreeningRepository;
+	
+	@Autowired
+	TestDriveRepository testDriveRepository;
 	
 	// Get All Clients
 	@GetMapping("/clients")
@@ -235,26 +253,166 @@ public class TdbsController {
 	//    return dealerAgentRepository.save(agent);
 	//}
 	
-	// Get a Single dealer
-	@GetMapping("/sendEmail")
-	public String sendEmail() {
+	// Send email to user
+	@GetMapping("/sendUserEmail/{id}")
+	public String sendUserEmail(@PathVariable(value = "id") Long bookingId) {
+		
+		ClientBooking clientBooking = clientBookingRepository.findById(bookingId)
+	            .orElseThrow(() -> new ResourceNotFoundException("ClientBooking", "bookingId", bookingId));
+		
+		Client client = clientRepository.findById(clientBooking.getClientId())
+	            .orElseThrow(() -> new ResourceNotFoundException("Client", "clientId", clientBooking.getClientId()));
+		
+		TestDrive testDrive = testDriveRepository.findByBookingId(bookingId);
+		
+		Dealer dealer = dealerRepository.findById(testDrive.getDealerId())
+				.orElseThrow(() -> new ResourceNotFoundException("Dealer", "dealerId", testDrive.getDealerId()));
+		
 		String from = "jimmydiong@gmail.com";
-		String to = "jimmy_dls@yahoo.com";
-		String subject = "Java Mail with Spring Boot";
+		String to = client.getEmail();
+		String subject = "Mercedes-Benz test drive confirmation";
 		 
 		EmailTemplate template = new EmailTemplate("index.html");
+		
+		String venue = dealer.getAddress1() + "\n" + dealer.getAddress2() + "\n" + dealer.getAddress3();
 		 
 		Map<String, String> replacements = new HashMap<String, String>();
-		replacements.put("user", "Pavan");
-		replacements.put("today", String.valueOf(new Date()));
+		replacements.put("user", client.getFirstName());
+		replacements.put("branch", dealer.getBranchName());
+		replacements.put("venue", venue);
+		replacements.put("postcode", dealer.getPostCode());
+		replacements.put("city", dealer.getCity());
+		replacements.put("state", dealer.getState());
+		replacements.put("time", testDrive.getDateTimeFrom().toString());
+		replacements.put("testDriveId", testDrive.getTestDriveId().toString());
 		 
 		String message = template.getTemplate(replacements);
 		 
 		Email email = new Email(from, to, subject, message);
 		email.setHtml(true);
 		emailService.send(email);
-		
+		logger.info("sendEmail success");
+		testDrive.setStatusId(Constants.PENDING_CLIENT);
+		testDriveRepository.save(testDrive);
 		return "success";
+	}
+	
+	@GetMapping("/schedule")
+	public boolean schedule() {
+		Boolean status = false;
+		
+		List<ClientBooking> clientBookings = clientBookingRepository.findByStatus("C");
+
+		for(ClientBooking clientBooking : clientBookings ) {
+			Long dealerId;			
+			List<TestDriveScreening> testDriveScreenings = testDriveScreeningRepository.findMatchingTimeslot(clientBooking.getDateTimeFrom(), clientBooking.getCarModel(),false);
+			
+			if(!testDriveScreenings.isEmpty()) {
+				
+				//Determine which dealer is most nearer but will be mock at the moment
+				for(TestDriveScreening testDriveScreening : testDriveScreenings) {
+					dealerId = testDriveScreening.getDealerId();
+					
+					List<TestDrive> testDrives = testDriveRepository.findExistTestDrive(dealerId, clientBooking.getCarModel(), clientBooking.getDateTimeFrom());
+					
+					if(testDrives.size() >0) {
+						if(clientBooking.isPreferGroup()) {
+							TestDrive testDrive = new TestDrive();						
+														
+							testDrive.setBookingId(clientBooking.getBookingId());
+							testDrive.setScreeningId(testDriveScreening.getScreening_id());
+							testDrive.setCarModel(clientBooking.getCarModel());
+							testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
+							testDrive.setDealerId(dealerId);
+							testDrive.setStatusId(Constants.PENDING_DEALER);
+							testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
+							testDrive.setDateTimeTo(DateUtils.addHours(testDrives.get(testDrives.size()-1).getDateTimeTo(), 1));
+							testDrive.setPreferGroup(clientBooking.isPreferGroup());
+							testDriveRepository.save(testDrive);
+							
+							
+							
+							TestDriveScreening testDriveScreeningFound = testDriveScreeningRepository.findByTimeslot(testDrives.get(0).getDateTimeTo(),clientBooking.getCarModel(), dealerId);
+							
+							testDriveScreeningFound.setReserved(true);
+							testDriveScreeningRepository.save(testDriveScreeningFound);
+							
+							for(TestDrive currentTestDrive :testDrives) {
+								currentTestDrive.setDateTimeTo(DateUtils.addHours(currentTestDrive.getDateTimeTo(), 1));
+								 	testDriveRepository.save(currentTestDrive);
+							}
+							
+							
+							
+						}else {
+							logger.info("Client not prefer group");
+							continue;
+						}
+						
+					}else {
+						logger.info("Found timeslot");
+						TestDrive testDrive = new TestDrive();						
+						
+						
+						testDrive.setBookingId(clientBooking.getBookingId());
+						testDrive.setScreeningId(testDriveScreening.getScreening_id());
+						testDrive.setCarModel(clientBooking.getCarModel());
+						testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
+						testDrive.setDealerId(dealerId);
+						testDrive.setStatusId(Constants.PENDING_DEALER);
+						testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
+						testDrive.setDateTimeTo(DateUtils.addHours(clientBooking.getDateTimeFrom(), 1));
+						testDrive.setPreferGroup(clientBooking.isPreferGroup());
+						testDriveRepository.save(testDrive);
+						
+						if(!clientBooking.isPreferGroup()) {
+							testDriveScreening.setReserved(true);
+							testDriveScreeningRepository.save(testDriveScreening);
+						}
+						logger.info("Done insert");						
+									
+					}
+					logger.info("Done insert");
+					clientBooking.setStatusId(Constants.DONE);
+					clientBookingRepository.save(clientBooking);
+					break;
+				}
+				
+			}else {
+				logger.info("No matching found for Booking ID{}",clientBooking.getBookingId());
+				clientBooking.setStatusId(Constants.NOT_FOUND);
+				clientBookingRepository.save(clientBooking);
+			}
+			
+		}
+		status = true;
+		return status;
+	}
+	
+	// Send email to user
+	@GetMapping("/invitation/{status}/{id}")
+	public String updateInvitationStatus(@PathVariable(value = "status") String status, @PathVariable(value = "id") Long testDriveId) {
+		TestDrive testDrive = testDriveRepository.findById(testDriveId)
+	            .orElseThrow(() -> new ResourceNotFoundException("TestDrive", "testDriveId", testDriveId));
+		
+		testDrive.setStatusId(status);
+		testDriveRepository.save(testDrive);
+		
+		if(status.equals(Constants.DECLINE) && !testDrive.isPreferGroup()) {
+			TestDriveScreening testDriveScreening = testDriveScreeningRepository.findById(testDrive.getScreeningId())
+					.orElseThrow(() -> new ResourceNotFoundException("TestDriveScreening", "testDriveId", testDrive.getScreeningId()));
+			
+			testDriveScreening.setReserved(false);
+			testDriveScreeningRepository.save(testDriveScreening);
+		}
+		
+		return "Thanks for your confirmation";
+	}
+	
+	// Get All testDrive
+	@GetMapping("/testDrive")
+	public List<TestDrive> getAllTestDrive() {
+	    return testDriveRepository.findAll();
 	}
 
 }

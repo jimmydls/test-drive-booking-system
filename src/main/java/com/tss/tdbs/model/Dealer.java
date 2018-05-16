@@ -74,7 +74,7 @@ public class Dealer implements Serializable{
 	
 	@Type( type = "json" )
 	@Column(name = "car_model", columnDefinition = "json" )
-    private List<Car> carModel;
+    private List<String> carModel;
 	
 	@Type( type = "json" )
 	@Column(name = "availability", columnDefinition = "json" )
@@ -195,11 +195,11 @@ public class Dealer implements Serializable{
 		this.city = city;
 	}
 
-	public List<Car> getCarModel() {
+	public List<String> getCarModel() {
 		return carModel;
 	}
 
-	public void setCarModel(List<Car> carModel) {
+	public void setCarModel(List<String> carModel) {
 		this.carModel = carModel;
 	}
 
