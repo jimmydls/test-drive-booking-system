@@ -302,6 +302,25 @@ public class TdbsController {
 		return "success";
 	}
 	
+	// Send email to user
+	@GetMapping("/cancelAppointment/{id}")
+	public String cancelAppointment(@PathVariable(value = "id") Long bookingId) {
+		TestDrive testDrive = testDriveRepository.findByBookingId(bookingId);
+		
+		testDrive.setStatusId(Constants.DECLINE);
+		testDriveRepository.save(testDrive);
+		
+		if(!testDrive.isPreferGroup()) {
+			TestDriveScreening testDriveScreening = testDriveScreeningRepository.findById(testDrive.getScreeningId())
+					.orElseThrow(() -> new ResourceNotFoundException("TestDriveScreening", "testDriveId", testDrive.getScreeningId()));
+			
+			testDriveScreening.setReserved(false);
+			testDriveScreeningRepository.save(testDriveScreening);
+		}
+		
+		return "success";
+	}
+	
 	@GetMapping("/schedule")
 	public boolean schedule() {
 		Boolean status = false;
