@@ -307,6 +307,31 @@ public class TdbsController {
 	public String cancelAppointment(@PathVariable(value = "id") Long bookingId) {
 		TestDrive testDrive = testDriveRepository.findByBookingId(bookingId);
 		
+		ClientBooking clientBooking = clientBookingRepository.findById(bookingId)
+	            .orElseThrow(() -> new ResourceNotFoundException("ClientBooking", "bookingId", bookingId));
+		
+		Client client = clientRepository.findById(clientBooking.getClientId())
+	            .orElseThrow(() -> new ResourceNotFoundException("Client", "clientId", clientBooking.getClientId()));
+		
+		String from = "jimmydiong@gmail.com";
+		String to = client.getEmail();
+		String subject = "Mercedes-Benz test drive cancellation";
+		 
+		EmailTemplate template = new EmailTemplate("decline.html");
+		
+		Map<String, String> replacements = new HashMap<String, String>();
+		replacements.put("user", client.getFirstName());
+		replacements.put("carModel", testDrive.getCarModel());
+		replacements.put("time", testDrive.getStart().toString());
+		 
+		String message = template.getTemplate(replacements);
+		 
+		Email email = new Email(from, to, subject, message);
+		email.setHtml(true);
+		emailService.send(email);
+		logger.info("sendEmail success");
+		
+		
 		testDrive.setStatusId(Constants.DECLINE);
 		testDriveRepository.save(testDrive);
 		
@@ -413,7 +438,7 @@ public class TdbsController {
 		return status;
 	}
 	
-	// Send email to user
+	// user confirmation status
 	@GetMapping("/invitation/{status}/{id}")
 	public String updateInvitationStatus(@PathVariable(value = "status") String status, @PathVariable(value = "id") Long testDriveId) {
 		TestDrive testDrive = testDriveRepository.findById(testDriveId)
@@ -449,7 +474,7 @@ public class TdbsController {
 	@SuppressWarnings("deprecation")
 	@GetMapping("/generateTimeslot")
 	public boolean generateTimeslot() {
-		
+		logger.info("generateTimeslot");
 		List<Dealer> dealers = dealerRepository.findAll();
 		
 		for(Dealer dealer: dealers) {
@@ -459,11 +484,33 @@ public class TdbsController {
 				
 				List<LocalDate> dateInCalendar = weeksInCalendar(YearMonth.now(), convertDaysOfWeek(dealerAvailability.getDay()));
 				
+				logger.info(dateInCalendar.toString());
+				
 				for(LocalDate localDate : dateInCalendar) {
 					Instant instant = localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
-					Date date = Date.from(instant);
+					Date dateFrom = Date.from(instant);
+					Date dateTo = Date.from(instant);
 					
-					date.setHours(9);
+					dateFrom.setHours(dealerAvailability.getFrom());
+					dateTo.setHours(dealerAvailability.getTo());
+					logger.info(dateFrom.toString());
+					logger.info(dateTo.toString());
+					while(dateFrom.before(dateTo)) {
+						logger.info("true");
+						List<String> carModels = dealer.getCarModel();
+						
+						for(String carModel : carModels) {
+							TestDriveScreening testDriveScreening = new TestDriveScreening();
+							testDriveScreening.setCarModel(carModel);
+							testDriveScreening.setDealerId(dealer.getDealerId());
+							testDriveScreening.setReserved(false);
+							testDriveScreening.setDateTimeFrom(dateFrom);
+							testDriveScreening.setDateTimeTo(DateUtils.addHours(dateFrom, 1));
+							testDriveScreeningRepository.save(testDriveScreening);
+						}
+						
+						dateFrom = DateUtils.addHours(dateFrom, 1);
+					}
 				}
 			}
 		}
