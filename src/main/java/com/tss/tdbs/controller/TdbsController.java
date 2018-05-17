@@ -441,9 +441,8 @@ public class TdbsController {
 	
 	// Get All testDrive
 	@GetMapping("/testDrive/{id}")
-	public TestDrive getTestDriveById(@PathVariable(value = "id") Long testDriveId) {
-		return testDriveRepository.findById(testDriveId)
-	            .orElseThrow(() -> new ResourceNotFoundException("TestDrive", "testDriveId", testDriveId));
+	public TestDrive getTestDriveById(@PathVariable(value = "id") Long bookingId) {
+		return testDriveRepository.findByBookingId(bookingId);
 	}
 	
 	// Get All testDrive
