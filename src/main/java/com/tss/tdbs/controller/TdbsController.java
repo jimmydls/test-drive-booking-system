@@ -1,11 +1,11 @@
 package com.tss.tdbs.controller;
 
+import com.tss.tdbs.dto.DealerAvailability;
 import com.tss.tdbs.exception.ResourceNotFoundException;
 import com.tss.tdbs.form.ClientForm;
 import com.tss.tdbs.model.Client;
 import com.tss.tdbs.model.ClientBooking;
 import com.tss.tdbs.model.Dealer;
-import com.tss.tdbs.model.DealerAgent;
 import com.tss.tdbs.model.TestDrive;
 import com.tss.tdbs.model.TestDriveScreening;
 import com.tss.tdbs.repository.ClientBookingRepository;
@@ -23,8 +23,6 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,12 +30,16 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @CrossOrigin
@@ -279,12 +281,14 @@ public class TdbsController {
 		 
 		Map<String, String> replacements = new HashMap<String, String>();
 		replacements.put("user", client.getFirstName());
+		replacements.put("carModel", testDrive.getCarModel());
 		replacements.put("branch", dealer.getBranchName());
+		replacements.put("contact", dealer.getContactNumber());
 		replacements.put("venue", venue);
 		replacements.put("postcode", dealer.getPostCode());
 		replacements.put("city", dealer.getCity());
 		replacements.put("state", dealer.getState());
-		replacements.put("time", testDrive.getDateTimeFrom().toString());
+		replacements.put("time", testDrive.getStart().toString());
 		replacements.put("testDriveId", testDrive.getTestDriveId().toString());
 		 
 		String message = template.getTemplate(replacements);
@@ -323,23 +327,23 @@ public class TdbsController {
 							testDrive.setBookingId(clientBooking.getBookingId());
 							testDrive.setScreeningId(testDriveScreening.getScreening_id());
 							testDrive.setCarModel(clientBooking.getCarModel());
-							testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
 							testDrive.setDealerId(dealerId);
 							testDrive.setStatusId(Constants.PENDING_DEALER);
-							testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
-							testDrive.setDateTimeTo(DateUtils.addHours(testDrives.get(testDrives.size()-1).getDateTimeTo(), 1));
+							testDrive.setStart(clientBooking.getDateTimeFrom());
+							testDrive.setEnd(DateUtils.addHours(testDrives.get(testDrives.size()-1).getEnd(), 1));
 							testDrive.setPreferGroup(clientBooking.isPreferGroup());
+							testDrive.setTitle(clientBooking.getTitle());
 							testDriveRepository.save(testDrive);
 							
 							
 							
-							TestDriveScreening testDriveScreeningFound = testDriveScreeningRepository.findByTimeslot(testDrives.get(0).getDateTimeTo(),clientBooking.getCarModel(), dealerId);
+							TestDriveScreening testDriveScreeningFound = testDriveScreeningRepository.findByTimeslot(testDrives.get(0).getEnd(),clientBooking.getCarModel(), dealerId);
 							
 							testDriveScreeningFound.setReserved(true);
 							testDriveScreeningRepository.save(testDriveScreeningFound);
 							
 							for(TestDrive currentTestDrive :testDrives) {
-								currentTestDrive.setDateTimeTo(DateUtils.addHours(currentTestDrive.getDateTimeTo(), 1));
+								currentTestDrive.setEnd(DateUtils.addHours(currentTestDrive.getEnd(), 1));
 								 	testDriveRepository.save(currentTestDrive);
 							}
 							
@@ -357,13 +361,13 @@ public class TdbsController {
 						
 						testDrive.setBookingId(clientBooking.getBookingId());
 						testDrive.setScreeningId(testDriveScreening.getScreening_id());
-						testDrive.setCarModel(clientBooking.getCarModel());
-						testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
+						testDrive.setCarModel(clientBooking.getCarModel());						
 						testDrive.setDealerId(dealerId);
 						testDrive.setStatusId(Constants.PENDING_DEALER);
-						testDrive.setDateTimeFrom(clientBooking.getDateTimeFrom());
-						testDrive.setDateTimeTo(DateUtils.addHours(clientBooking.getDateTimeFrom(), 1));
+						testDrive.setStart(clientBooking.getDateTimeFrom());
+						testDrive.setEnd(DateUtils.addHours(clientBooking.getDateTimeFrom(), 1));
 						testDrive.setPreferGroup(clientBooking.isPreferGroup());
+						testDrive.setTitle(clientBooking.getTitle());
 						testDriveRepository.save(testDrive);
 						
 						if(!clientBooking.isPreferGroup()) {
@@ -415,5 +419,76 @@ public class TdbsController {
 	public List<TestDrive> getAllTestDrive() {
 	    return testDriveRepository.findAll();
 	}
+	
+	// Get All testDrive
+	/*@GetMapping("/generateTimeslot")
+	public boolean generateTimeslot() {
+		
+		List<Dealer> dealers = dealerRepository.findAll();
+		
+		for(Dealer dealer: dealers) {
+			List<DealerAvailability> dealerAvailabilitys = dealer.getDealerAvailability();
+			
+			for(DealerAvailability dealerAvailability : dealerAvailabilitys) {
+				
+				List<LocalDate> dateInCalendar = weeksInCalendar(YearMonth.now(), convertDaysOfWeek(dealerAvailability.getDay()));
+				
+				for(LocalDate localDate : dateInCalendar) {
+					Instant instant = localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+					Date res = Date.from(instant);
+				}
+			}
+		}
+		
+	    return true;
+	}*/
+	
+	public static List<LocalDate> weeksInCalendar(YearMonth month, DayOfWeek dayofWeek) {
+	    List<LocalDate> firstDaysOfWeeks = new ArrayList<>();
+	    for (LocalDate day = firstDayOfCalendar(month, dayofWeek); stillInCalendar(month, day); day = day
+	        .plusWeeks(1)) {
+	      firstDaysOfWeeks.add(day);
+	    }
+	    return firstDaysOfWeeks;
+	}
+
+  private static LocalDate firstDayOfCalendar(YearMonth month, DayOfWeek day) {
+    DayOfWeek FIRST_DAY_OF_WEEK = day;
+    return month.atDay(1).with(FIRST_DAY_OF_WEEK);
+  }
+
+  private static boolean stillInCalendar(YearMonth yearMonth, LocalDate day) {
+    return !day.isAfter(yearMonth.atEndOfMonth());
+  }
+  
+  public DayOfWeek convertDaysOfWeek(int day) {
+	  DayOfWeek dayOfWeek = null;
+	  
+	  switch(day) {
+	  case 0:
+		  dayOfWeek = DayOfWeek.SUNDAY;
+		  break;
+	  case 1:
+		  dayOfWeek = DayOfWeek.MONDAY;
+		  break;
+	  case 2:
+		  dayOfWeek = DayOfWeek.TUESDAY;
+		  break;
+	  case 3:
+		  dayOfWeek = DayOfWeek.WEDNESDAY;
+		  break;
+	  case 4:
+		  dayOfWeek = DayOfWeek.THURSDAY;
+		  break;
+	  case 5:
+		  dayOfWeek = DayOfWeek.FRIDAY;
+		  break;
+	  case 6:
+		  dayOfWeek = DayOfWeek.SATURDAY;
+		  break;
+	  }
+	  
+	  return dayOfWeek;
+  }
 
 }

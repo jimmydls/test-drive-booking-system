@@ -62,6 +62,9 @@ public class ClientBooking implements Serializable {
 	@Column(name = "status_id")
     private String statusId;
 	
+	@Column(name = "title")
+	private String title;
+	
 	@Column(name="created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     @CreatedDate
@@ -82,6 +85,16 @@ public class ClientBooking implements Serializable {
 
 	public Date getDateTimeFrom() {
 		return dateTimeFrom;
+	}
+	
+	
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 	public void setDateTimeFrom(Date dateTimeFrom) {

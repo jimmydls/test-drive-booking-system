@@ -66,11 +66,14 @@ public class TestDrive implements Serializable {
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "date_time_from")
-    private Date dateTimeFrom;
+    private Date start;
 	
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "date_time_to")
-    private Date dateTimeTo;
+    private Date end;
+	
+	@Column(name = "title")
+	private String title;
 	
 	@NotBlank
 	@Column(name = "status_id")
@@ -112,8 +115,15 @@ public class TestDrive implements Serializable {
 	public void setDealerId(Long dealerId) {
 		this.dealerId = dealerId;
 	}
-	
-	
+		
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
 	public Long getScreeningId() {
 		return screeningId;
@@ -131,20 +141,20 @@ public class TestDrive implements Serializable {
 		this.carModel = carModel;
 	}
 
-	public Date getDateTimeFrom() {
-		return dateTimeFrom;
+	public Date getStart() {
+		return start;
 	}
 
-	public void setDateTimeFrom(Date dateTimeFrom) {
-		this.dateTimeFrom = dateTimeFrom;
+	public void setStart(Date start) {
+		this.start = start;
 	}
 
-	public Date getDateTimeTo() {
-		return dateTimeTo;
+	public Date getEnd() {
+		return end;
 	}
 
-	public void setDateTimeTo(Date dateTimeTo) {
-		this.dateTimeTo = dateTimeTo;
+	public void setEnd(Date end) {
+		this.end = end;
 	}
 
 	public String getStatusId() {
