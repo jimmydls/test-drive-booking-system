@@ -440,7 +440,15 @@ public class TdbsController {
 	}
 	
 	// Get All testDrive
-	/*@GetMapping("/generateTimeslot")
+	@GetMapping("/testDrive/{id}")
+	public TestDrive getTestDriveById(@PathVariable(value = "id") Long testDriveId) {
+		return testDriveRepository.findById(testDriveId)
+	            .orElseThrow(() -> new ResourceNotFoundException("TestDrive", "testDriveId", testDriveId));
+	}
+	
+	// Get All testDrive
+	@SuppressWarnings("deprecation")
+	@GetMapping("/generateTimeslot")
 	public boolean generateTimeslot() {
 		
 		List<Dealer> dealers = dealerRepository.findAll();
@@ -454,13 +462,15 @@ public class TdbsController {
 				
 				for(LocalDate localDate : dateInCalendar) {
 					Instant instant = localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
-					Date res = Date.from(instant);
+					Date date = Date.from(instant);
+					
+					date.setHours(9);
 				}
 			}
 		}
 		
 	    return true;
-	}*/
+	}
 	
 	public static List<LocalDate> weeksInCalendar(YearMonth month, DayOfWeek dayofWeek) {
 	    List<LocalDate> firstDaysOfWeeks = new ArrayList<>();
