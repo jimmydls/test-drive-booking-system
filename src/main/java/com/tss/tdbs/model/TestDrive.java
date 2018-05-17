@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
 @Entity
-@NamedQuery(name = "TestDrive.findExistTestDrive", query = "SELECT e FROM TestDrive e WHERE e.dealerId=?1 AND e.carModel=?2 AND e.dateTimeFrom=?3 AND e.statusId!='DC'")
+@NamedQuery(name = "TestDrive.findExistTestDrive", query = "SELECT e FROM TestDrive e WHERE e.dealerId=?1 AND e.carModel=?2 AND e.start=?3 AND e.statusId!='DC'")
 @NamedQuery(name = "TestDrive.findByBookingId", query = "SELECT e FROM TestDrive e WHERE e.bookingId=?1")
 @Table(name = "test_drive")
 @TypeDef(name = "json", typeClass = JsonStringType.class)
