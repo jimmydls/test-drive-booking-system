@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
+@CrossOrigin
 @RequestMapping("/tdbs/api")
 public class TdbsController {
 	
