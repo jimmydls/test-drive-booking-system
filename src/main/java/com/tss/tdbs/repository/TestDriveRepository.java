@@ -14,5 +14,6 @@ public interface TestDriveRepository extends JpaRepository<TestDrive, Long>{
 	
 	public List<TestDrive> findExistTestDrive(Long dealerId, String carModel, Date dateTimeFrom);
 	public TestDrive findByBookingId(Long bookingId);
+	public TestDrive findByDealerId(Long dealerId);
 
 }

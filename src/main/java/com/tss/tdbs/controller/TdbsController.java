@@ -470,6 +470,12 @@ public class TdbsController {
 		return testDriveRepository.findByBookingId(bookingId);
 	}
 	
+	// Get testDrive by dealer id
+	@GetMapping("/testDrive/dealer/{id}")
+	public TestDrive getTestDriveByDealerId(@PathVariable(value = "id") Long dealerId) {
+		return testDriveRepository.findByDealerId(dealerId);
+	}
+	
 	// Get All testDrive
 	@SuppressWarnings("deprecation")
 	@GetMapping("/generateTimeslot")
