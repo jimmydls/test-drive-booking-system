@@ -178,8 +178,9 @@ public class TdbsController {
 	// Create a new client booking
 	@PostMapping("/newClientBooking")
 	public ClientBooking createClientBooking(@Valid @RequestBody ClientBooking clientBooking) {
+		ClientBooking clientBookingSaved = clientBookingRepository.save(clientBooking);
 		schedule();
-	    return clientBookingRepository.save(clientBooking);
+	    return clientBookingSaved;
 	}
 	
 	// Get All client booking
