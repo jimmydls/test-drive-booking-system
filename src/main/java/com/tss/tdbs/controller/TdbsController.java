@@ -178,6 +178,7 @@ public class TdbsController {
 	// Create a new client booking
 	@PostMapping("/newClientBooking")
 	public ClientBooking createClientBooking(@Valid @RequestBody ClientBooking clientBooking) {
+		schedule();
 	    return clientBookingRepository.save(clientBooking);
 	}
 	
@@ -440,7 +441,7 @@ public class TdbsController {
 	
 	// user confirmation status
 	@GetMapping("/invitation/{status}/{id}")
-	public String updateInvitationStatus(@PathVariable(value = "status") String status, @PathVariable(value = "id") Long testDriveId) {
+	public String updateInvitationStatus(@PathVariable(value = "status") String status, @PathVariable(value = "id") Long testDriveId, HttpServletResponse response) {
 		TestDrive testDrive = testDriveRepository.findById(testDriveId)
 	            .orElseThrow(() -> new ResourceNotFoundException("TestDrive", "testDriveId", testDriveId));
 		
@@ -454,6 +455,12 @@ public class TdbsController {
 			testDriveScreening.setReserved(false);
 			testDriveScreeningRepository.save(testDriveScreening);
 		}
+		try {
+			response.sendRedirect("/html/Thanks.html");
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
 		
 		return "Thanks for your confirmation";
 	}
