@@ -1,0 +1,48 @@
+version: '2.1'
+
+services: 
+  tdbs-mysql:
+    image: mykulregistry.azurecr.io/mykulregistry/tdbs-database
+    container_name: "tdbs-mysql"
+    restart: always
+    #ports:
+    #  - 3306:3306
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=Root@tss
+      - MYSQL_DATABASE=tdbs
+      - MYSQL_USER=tss
+      - MYSQL_PASSWORD=Root@tss
+      
+  spring-boot-tdbs:
+    image: mykulregistry.azurecr.io/mykulregistry/tdbs-backend
+    container_name: "tdbs-api"
+    restart: always
+    links:
+      - tdbs-mysql
+    depends_on:
+      - tdbs-mysql
+    ports:
+      - 8080:8080 #public access
+    environment:
+      - DATABASE_HOST=tdbs-mysql
+      - DATABASE_USER=tdbs
+      - DATABASE_PASSWORD=Root@tss
+      - DATABASE_NAME=tdbs
+      - DATABASE_PORT=3306
+      - TZ=Asia/Kuala_Lumpur
+      - API_URL=http://138.91.121.149:8080 #point to spring-boot-tdbs public access url for API access
+
+  dealer-booking:
+    image: mykulregistry.azurecr.io/mykulregistry/dealer-booking
+    container_name: "dealer-booking"
+    environment:
+      - REACT_APP_APIKEY=http://138.91.121.149:8080 #point to spring-boot-tdbs public access url for API access
+    restart: always
+    links:
+      - spring-boot-tdbs
+    depends_on:
+      - spring-boot-tdbs
+    ports:
+      - 80:3000

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +48,9 @@ import java.util.Map;
 public class TdbsController {
 	
 	final static Logger logger = LoggerFactory.getLogger(TdbsController.class);
+	
+	@Value("${api.url}")
+	private String apiUrl;
 	
 	@Autowired
 	EmailService emailService;
@@ -273,7 +277,7 @@ public class TdbsController {
 		Dealer dealer = dealerRepository.findById(testDrive.getDealerId())
 				.orElseThrow(() -> new ResourceNotFoundException("Dealer", "dealerId", testDrive.getDealerId()));
 		
-		String from = "jimmydiong@gmail.com";
+		String from = "mymchinausr0001@gmail.com";
 		String to = client.getEmail();
 		String subject = "Mercedes-Benz test drive confirmation";
 		 
@@ -282,6 +286,7 @@ public class TdbsController {
 		String venue = dealer.getAddress1() + "\n" + dealer.getAddress2() + "\n" + dealer.getAddress3();
 		 
 		Map<String, String> replacements = new HashMap<String, String>();
+		replacements.put("API_URL", apiUrl);
 		replacements.put("user", client.getFirstName());
 		replacements.put("carModel", testDrive.getCarModel());
 		replacements.put("branch", dealer.getBranchName());
@@ -315,13 +320,14 @@ public class TdbsController {
 		Client client = clientRepository.findById(clientBooking.getClientId())
 	            .orElseThrow(() -> new ResourceNotFoundException("Client", "clientId", clientBooking.getClientId()));
 		
-		String from = "jimmydiong@gmail.com";
+		String from = "mymchinausr0001@gmail.com";
 		String to = client.getEmail();
 		String subject = "Mercedes-Benz test drive cancellation";
 		 
 		EmailTemplate template = new EmailTemplate("decline.html");
 		
 		Map<String, String> replacements = new HashMap<String, String>();
+		replacements.put("API_URL", apiUrl);
 		replacements.put("user", client.getFirstName());
 		replacements.put("carModel", testDrive.getCarModel());
 		replacements.put("time", testDrive.getStart().toString());
@@ -457,6 +463,7 @@ public class TdbsController {
 			testDriveScreeningRepository.save(testDriveScreening);
 		}
 		try {
+			
 			response.sendRedirect("/html/Thanks.html");
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -486,8 +493,8 @@ public class TdbsController {
 	
 	// Get All testDrive
 	@SuppressWarnings("deprecation")
-	@GetMapping("/generateTimeslot")
-	public boolean generateTimeslot() {
+	@GetMapping("/generateTimeslot/{year}/{month}")
+	public boolean generateTimeslot(@PathVariable(value = "year") int year, @PathVariable(value = "month") int month) {
 		logger.info("generateTimeslot");
 		List<Dealer> dealers = dealerRepository.findAll();
 		
@@ -496,7 +503,7 @@ public class TdbsController {
 			
 			for(DealerAvailability dealerAvailability : dealerAvailabilitys) {
 				
-				List<LocalDate> dateInCalendar = weeksInCalendar(YearMonth.now(), convertDaysOfWeek(dealerAvailability.getDay()));
+				List<LocalDate> dateInCalendar = weeksInCalendar(YearMonth.of(year, month), convertDaysOfWeek(dealerAvailability.getDay()));
 				
 				logger.info(dateInCalendar.toString());
 				
